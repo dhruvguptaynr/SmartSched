@@ -546,16 +546,52 @@ const DATA = {
   ]
 };
 
-// Real teacher data from timetable.json
-const TEACHER_MAP = {
-  'CN':  { teacher: 'Dhananjay', room: 'BB LH-1' },
-  'ADS': { teacher: 'Taniya',    room: 'BB LH-1' },
-  'S&UL':{ teacher: 'Mudrik',    room: 'BB LH-1' },
-  'MOS': { teacher: 'Rajwinder', room: 'MB LH-401' },
-  'PBL-I':{ teacher: 'Mudrik',   room: 'BB LH-1' },
-  'Explore':{ teacher: 'Trainer', room: 'BB LH-1' },
-  'FREE':{ teacher: null, room: null }
+// Per-class teacher maps extracted from timetable.json via API
+// Matches original: 4A=Dhananjay/Taniya/Mudrik, 4B=Ravinder/Taniya/Mudrik,
+//                   4C=Dhananjay/T-Girish/Rohit, 4D=Ravinder/T-Girish/Rohit
+let CLASS_TEACHER_MAPS = {
+  '4A': {
+    'CN':     { teacher: 'Dhananjay', room: 'BB LH-1' },
+    'ADS':    { teacher: 'Taniya',    room: 'BB LH-1' },
+    'S&UL':   { teacher: 'Mudrik',    room: 'BB LH-1' },
+    'PBL-I':  { teacher: 'Mudrik',    room: 'BB LH-1' },
+    'MOS':    { teacher: 'Rajwinder', room: 'MB LH-401' },
+    'Explore':{ teacher: 'Trainer 4', room: 'BB LH-1' },
+    'FREE':   { teacher: null,        room: null }
+  },
+  '4B': {
+    'CN':     { teacher: 'Ravinder',  room: 'BB LH-6' },
+    'ADS':    { teacher: 'Taniya',    room: 'BB LH-6' },
+    'S&UL':   { teacher: 'Mudrik',    room: 'BB LH-6' },
+    'PBL-I':  { teacher: 'Mudrik',    room: 'BB LH-6' },
+    'MOS':    { teacher: 'Rajwinder', room: 'MB LH-401' },
+    'Explore':{ teacher: 'Trainer 4', room: 'BB LH-6' },
+    'FREE':   { teacher: null,        room: null }
+  },
+  '4C': {
+    'CN':     { teacher: 'Dhananjay', room: 'BB LH-7' },
+    'ADS':    { teacher: 'T-Girish',  room: 'BB LH-7' },
+    'S&UL':   { teacher: 'Rohit',     room: 'BB LH-7' },
+    'PBL-I':  { teacher: 'Rohit',     room: 'BB LH-7' },
+    'MOS':    { teacher: 'Rajwinder', room: 'MB LH-401' },
+    'Explore':{ teacher: 'Trainer 4', room: 'BB LH-7' },
+    'FREE':   { teacher: null,        room: null }
+  },
+  '4D': {
+    'CN':     { teacher: 'Ravinder',  room: 'BB LH-8' },
+    'ADS':    { teacher: 'T-Girish',  room: 'BB LH-8' },
+    'S&UL':   { teacher: 'Rohit',     room: 'BB LH-8' },
+    'PBL-I':  { teacher: 'Rohit',     room: 'BB LH-8' },
+    'MOS':    { teacher: 'Rajwinder', room: 'MB LH-401' },
+    'Explore':{ teacher: 'Trainer 4', room: 'BB LH-8' },
+    'FREE':   { teacher: null,        room: null }
+  }
 };
+
+// Helper: get teacher map for current class
+function getTeacherMap(cls) {
+  return CLASS_TEACHER_MAPS[cls] || CLASS_TEACHER_MAPS['4A'];
+}
 
 const REQUIRED = { CN:5, ADS:10, 'S&UL':8, 'PBL-I':2, MOS:3, Explore:1, FREE:1 };
 
@@ -625,9 +661,10 @@ function dailyBalanceScore(data) {
 function teacherLoadScore(data) {
   const teacherSlots = {};
   for (const cls in data) {
+    const map = getTeacherMap(cls);   // use each class's own teacher map
     data[cls].forEach(day => {
       day.forEach(s => {
-        const t = TEACHER_MAP[s]?.teacher;
+        const t = map[s]?.teacher;
         if (t) teacherSlots[t] = (teacherSlots[t] || 0) + 1;
       });
     });
@@ -803,13 +840,14 @@ function renderConflicts() {
 }
 
 function renderTeachers() {
-  // Calculate real teacher loads from current data
+  // Calculate real teacher loads across ALL classes using each class's own teacher map
   const teacherSlots = {};
   const teacherSubjs = {};
   for (const cls in currentData) {
+    const map = getTeacherMap(cls);   // ← use cls-specific map, not cur
     currentData[cls].forEach(day => {
       day.forEach(s => {
-        const t = TEACHER_MAP[s]?.teacher;
+        const t = map[s]?.teacher;
         if (!t) return;
         teacherSlots[t] = (teacherSlots[t] || 0) + 1;
         if (!teacherSubjs[t]) teacherSubjs[t] = new Set();
@@ -911,6 +949,16 @@ async function runOptimiser() {
     currentData = parsed.timetable;
     generationScores = parsed.generation_scores || [72, 78, 85, 80, 76];
     bestGenIdx = parsed.best_gen ?? generationScores.indexOf(Math.max(...generationScores));
+    // Update per-class teacher maps from real backend data
+    if (parsed.class_teacher_maps) {
+      CLASS_TEACHER_MAPS = parsed.class_teacher_maps;
+      // Ensure FREE is always present in each class map
+      for (const cls in CLASS_TEACHER_MAPS) {
+        if (!CLASS_TEACHER_MAPS[cls]['FREE']) {
+          CLASS_TEACHER_MAPS[cls]['FREE'] = { teacher: null, room: null };
+        }
+      }
+    }
 
     // Update metrics from real backend data
     if (parsed.metrics) {

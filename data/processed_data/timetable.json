@@ -1,0 +1,458 @@
+[
+    {
+        "day": "Mo",
+        "subject": "CN",
+        "room": "BB LH-1",
+        "teacher": "Dhananjay"
+    },
+    {
+        "day": "Mo",
+        "subject": "Explore",
+        "room": "BB LH-1",
+        "teacher": "Trainer 4"
+    },
+    {
+        "day": "Mo",
+        "subject": "ADS",
+        "room": "BB LH-1",
+        "teacher": "Taniya"
+    },
+    {
+        "day": "Mo",
+        "subject": "S&UL",
+        "room": "BB LH-1",
+        "teacher": "Mudrik"
+    },
+    {
+        "day": "Tu",
+        "subject": "CN",
+        "room": "BB LH-1",
+        "teacher": "Dhananjay"
+    },
+    {
+        "day": "Tu",
+        "subject": "MOS",
+        "room": "BB LH-1",
+        "teacher": "Rajwinder"
+    },
+    {
+        "day": "Tu",
+        "subject": "ADS",
+        "room": "BB LH-1",
+        "teacher": "Taniya"
+    },
+    {
+        "day": "Tu",
+        "subject": "S&UL",
+        "room": "BB LH-1",
+        "teacher": "Mudrik"
+    },
+    {
+        "day": "We",
+        "subject": "CN",
+        "room": "BB LH-1",
+        "teacher": "Dhananjay"
+    },
+    {
+        "day": "We",
+        "subject": "ADS",
+        "room": "BB LH-1",
+        "teacher": "Taniya"
+    },
+    {
+        "day": "We",
+        "subject": "S&UL",
+        "room": "BB LH-1",
+        "teacher": "Mudrik"
+    },
+    {
+        "day": "Th",
+        "subject": "ADS",
+        "room": "BB LH-1",
+        "teacher": "Taniya"
+    },
+    {
+        "day": "Th",
+        "subject": "CN",
+        "room": "BB LH-1",
+        "teacher": "Dhananjay"
+    },
+    {
+        "day": "Th",
+        "subject": "PBL-I",
+        "room": "BB LH-1",
+        "teacher": "Mudrik"
+    },
+    {
+        "day": "Th",
+        "subject": "MOS",
+        "room": "MB LH-401",
+        "teacher": "Rajwinder"
+    },
+    {
+        "day": "Fr",
+        "subject": "CN",
+        "room": "BB LH-1",
+        "teacher": "Dhananjay"
+    },
+    {
+        "day": "Fr",
+        "subject": "PBL-I",
+        "room": "BB LH-1",
+        "teacher": "Mudrik"
+    },
+    {
+        "day": "Fr",
+        "subject": "ADS",
+        "room": "BB LH-1",
+        "teacher": "Taniya"
+    },
+    {
+        "day": "Fr",
+        "subject": "S&UL",
+        "room": "BB LH-1",
+        "teacher": "Mudrik"
+    },
+    {
+        "day": "Mo",
+        "subject": "S&UL",
+        "room": "BB LH-6",
+        "teacher": "Mudrik"
+    },
+    {
+        "day": "Mo",
+        "subject": "CN",
+        "room": "BB LH-6",
+        "teacher": "Ravinder"
+    },
+    {
+        "day": "Mo",
+        "subject": "MOS",
+        "room": "BB LH-6",
+        "teacher": "Rajwinder"
+    },
+    {
+        "day": "Mo",
+        "subject": "ADS",
+        "room": "BB LH-6",
+        "teacher": "Taniya"
+    },
+    {
+        "day": "Tu",
+        "subject": "S&UL",
+        "room": "BB LH-6",
+        "teacher": "Mudrik"
+    },
+    {
+        "day": "Tu",
+        "subject": "CN",
+        "room": "BB LH-6",
+        "teacher": "Ravinder"
+    },
+    {
+        "day": "Tu",
+        "subject": "PBL-I",
+        "room": "BB LH-6",
+        "teacher": "Mudrik"
+    },
+    {
+        "day": "Tu",
+        "subject": "ADS",
+        "room": "BB LH-6",
+        "teacher": "Taniya"
+    },
+    {
+        "day": "We",
+        "subject": "S&UL",
+        "room": "BB LH-6",
+        "teacher": "Mudrik"
+    },
+    {
+        "day": "We",
+        "subject": "CN",
+        "room": "BB LH-6",
+        "teacher": "Ravinder"
+    },
+    {
+        "day": "We",
+        "subject": "PBL-I",
+        "room": "BB LH-6",
+        "teacher": "Mudrik"
+    },
+    {
+        "day": "We",
+        "subject": "ADS",
+        "room": "BB LH-6",
+        "teacher": "Taniya"
+    },
+    {
+        "day": "Th",
+        "subject": "S&UL",
+        "room": "BB LH-6",
+        "teacher": "Mudrik"
+    },
+    {
+        "day": "Th",
+        "subject": "ADS",
+        "room": "BB LH-6",
+        "teacher": "Taniya"
+    },
+    {
+        "day": "Th",
+        "subject": "MOS",
+        "room": "MB LH-401",
+        "teacher": "Rajwinder"
+    },
+    {
+        "day": "Fr",
+        "subject": "CN",
+        "room": "BB LH-6",
+        "teacher": "Ravinder"
+    },
+    {
+        "day": "Fr",
+        "subject": "CN",
+        "room": "BB LH-6",
+        "teacher": "Ravinder"
+    },
+    {
+        "day": "Fr",
+        "subject": "Explore",
+        "room": "BB LH-6",
+        "teacher": "Trainer 4"
+    },
+    {
+        "day": "Fr",
+        "subject": "ADS",
+        "room": "BB LH-6",
+        "teacher": "Taniya"
+    },
+    {
+        "day": "Mo",
+        "subject": "ADS",
+        "room": "BB LH-7",
+        "teacher": "T-Girish"
+    },
+    {
+        "day": "Mo",
+        "subject": "MOS",
+        "room": "BB LH-7",
+        "teacher": "Rajwinder"
+    },
+    {
+        "day": "Mo",
+        "subject": "CN",
+        "room": "BB LH-7",
+        "teacher": "Dhananjay"
+    },
+    {
+        "day": "Mo",
+        "subject": "S&UL",
+        "room": "BB LH-7",
+        "teacher": "Rohit"
+    },
+    {
+        "day": "Tu",
+        "subject": "ADS",
+        "room": "BB LH-7",
+        "teacher": "T-Girish"
+    },
+    {
+        "day": "Tu",
+        "subject": "PBL-I",
+        "room": "BB LH-7",
+        "teacher": "Rohit"
+    },
+    {
+        "day": "Tu",
+        "subject": "CN",
+        "room": "BB LH-7",
+        "teacher": "Dhananjay"
+    },
+    {
+        "day": "Tu",
+        "subject": "S&UL",
+        "room": "BB LH-7",
+        "teacher": "Rohit"
+    },
+    {
+        "day": "We",
+        "subject": "ADS",
+        "room": "BB LH-7",
+        "teacher": "T-Girish"
+    },
+    {
+        "day": "We",
+        "subject": "CN",
+        "room": "BB LH-7",
+        "teacher": "Dhananjay"
+    },
+    {
+        "day": "We",
+        "subject": "S&UL",
+        "room": "BB LH-7",
+        "teacher": "Rohit"
+    },
+    {
+        "day": "Th",
+        "subject": "ADS",
+        "room": "BB LH-7",
+        "teacher": "T-Girish"
+    },
+    {
+        "day": "Th",
+        "subject": "Explore",
+        "room": "BB LH-7",
+        "teacher": "Trainer 4"
+    },
+    {
+        "day": "Th",
+        "subject": "CN",
+        "room": "BB LH-7",
+        "teacher": "Dhananjay"
+    },
+    {
+        "day": "Th",
+        "subject": "S&UL",
+        "room": "BB LH-7",
+        "teacher": "Rohit"
+    },
+    {
+        "day": "Fr",
+        "subject": "PBL-I",
+        "room": "BB LH-7",
+        "teacher": "Rohit"
+    },
+    {
+        "day": "Fr",
+        "subject": "CN",
+        "room": "BB LH-7",
+        "teacher": "Dhananjay"
+    },
+    {
+        "day": "Fr",
+        "subject": "ADS",
+        "room": "BB LH-7",
+        "teacher": "T-Girish"
+    },
+    {
+        "day": "Fr",
+        "subject": "MOS",
+        "room": "MB LH-401",
+        "teacher": "Rajwinder"
+    },
+    {
+        "day": "Mo",
+        "subject": "S&UL",
+        "room": "BB LH-8",
+        "teacher": "Rohit"
+    },
+    {
+        "day": "Mo",
+        "subject": "PBL-I",
+        "room": "BB LH-8",
+        "teacher": "Rohit"
+    },
+    {
+        "day": "Mo",
+        "subject": "CN",
+        "room": "BB LH-8",
+        "teacher": "Ravinder"
+    },
+    {
+        "day": "Mo",
+        "subject": "ADS",
+        "room": "BB LH-8",
+        "teacher": "T-Girish"
+    },
+    {
+        "day": "Tu",
+        "subject": "S&UL",
+        "room": "BB LH-8",
+        "teacher": "Rohit"
+    },
+    {
+        "day": "Tu",
+        "subject": "Explore",
+        "room": "BB LH-8",
+        "teacher": "Trainer 4"
+    },
+    {
+        "day": "Tu",
+        "subject": "CN",
+        "room": "BB LH-8",
+        "teacher": "Ravinder"
+    },
+    {
+        "day": "Tu",
+        "subject": "ADS",
+        "room": "BB LH-8",
+        "teacher": "T-Girish"
+    },
+    {
+        "day": "We",
+        "subject": "S&UL",
+        "room": "BB LH-8",
+        "teacher": "Rohit"
+    },
+    {
+        "day": "We",
+        "subject": "MOS",
+        "room": "BB LH-8",
+        "teacher": "Rajwinder"
+    },
+    {
+        "day": "We",
+        "subject": "CN",
+        "room": "BB LH-8",
+        "teacher": "Ravinder"
+    },
+    {
+        "day": "We",
+        "subject": "ADS",
+        "room": "BB LH-8",
+        "teacher": "T-Girish"
+    },
+    {
+        "day": "Th",
+        "subject": "S&UL",
+        "room": "BB LH-8",
+        "teacher": "Rohit"
+    },
+    {
+        "day": "Th",
+        "subject": "CN",
+        "room": "BB LH-8",
+        "teacher": "Ravinder"
+    },
+    {
+        "day": "Th",
+        "subject": "CN",
+        "room": "BB LH-8",
+        "teacher": "Ravinder"
+    },
+    {
+        "day": "Th",
+        "subject": "ADS",
+        "room": "BB LH-8",
+        "teacher": "T-Girish"
+    },
+    {
+        "day": "Fr",
+        "subject": "ADS",
+        "room": "BB LH-8",
+        "teacher": "T-Girish"
+    },
+    {
+        "day": "Fr",
+        "subject": "PBL-I",
+        "room": "BB LH-8",
+        "teacher": "Rohit"
+    },
+    {
+        "day": "Fr",
+        "subject": "MOS",
+        "room": "MB LH-401",
+        "teacher": "Rajwinder"
+    }
+]

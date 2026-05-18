@@ -2,7 +2,6 @@ import sys
 import os
 import json
 
-# Add project root to path so imports work in Vercel's serverless env
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from http.server import BaseHTTPRequestHandler
@@ -19,53 +18,77 @@ from scheduler.evaluator import (
     overall_timetable_score,
 )
 
-# ─────────────────────────────────────────────
-# STATIC CONFIG  (mirrors main.py)
-# ─────────────────────────────────────────────
 BASE_REQUIRED = {
-    "CN": 5,
-    "ADS": 10,
-    "S&UL": 8,
-    "PBL-I": 2,
-    "MOS": 3,
+    "CN":      5,
+    "ADS":     10,
+    "S&UL":    8,
+    "PBL-I":   2,
+    "MOS":     3,
     "Explore": 1,
-    "FREE": 1,
+    "FREE":    1,
 }
 
-CLASS_NAMES = ["4A", "4B", "4C", "4D"]
+_JSON_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "data", "processed_data", "timetable.json"
+)
 
-# Teacher & room map parsed from timetable.json
-SUBJECT_TEACHER_MAP = {
-    "CN":      {"teacher": "Dhananjay", "room": "BB LH-1"},
-    "ADS":     {"teacher": "Taniya",    "room": "BB LH-1"},
-    "S&UL":    {"teacher": "Mudrik",    "room": "BB LH-1"},
-    "PBL-I":   {"teacher": "Mudrik",    "room": "BB LH-1"},
-    "MOS":     {"teacher": "Rajwinder", "room": "MB LH-401"},
-    "Explore": {"teacher": "Trainer",   "room": "BB LH-1"},
-}
+def _load_class_maps():
+    """
+    Mirrors split_by_class() + build_class_map() from the original pipeline.
+    Reads the pre-parsed timetable.json so no PDF dependency at runtime.
+    Each class has its OWN teacher/room per subject as extracted from the PDF.
+    """
+    class_names = ["4A", "4B", "4C", "4D"]
 
+    with open(_JSON_PATH) as f:
+        structured = json.load(f)
 
-def build_classes():
-    classes = []
-    for name in CLASS_NAMES:
-        cls = ClassObj(name, dict(SUBJECT_TEACHER_MAP), "BB LH-1")
-        classes.append(cls)
-    return classes
+    # split_by_class: new class boundary when "Mo" follows "Fr"
+    classes_raw = []
+    current = []
+    prev_day = None
+    for entry in structured:
+        if entry["day"] == "Mo" and prev_day == "Fr":
+            classes_raw.append(current)
+            current = []
+        current.append(entry)
+        prev_day = entry["day"]
+    if current:
+        classes_raw.append(current)
+
+    # build_class_map: first occurrence of each subject per class wins
+    class_objects = []
+    for name, data in zip(class_names, classes_raw):
+        subject_teacher_map = {}
+        class_room = None
+        for entry in data:
+            sub = entry["subject"]
+            if sub not in subject_teacher_map:
+                subject_teacher_map[sub] = {
+                    "teacher": entry["teacher"],
+                    "room":    entry.get("room", "UNKNOWN"),
+                }
+            if class_room is None:
+                class_room = entry.get("room", "UNKNOWN")
+        cls = ClassObj(name, subject_teacher_map, class_room)
+        class_objects.append(cls)
+
+    return class_objects
 
 
 def timetable_to_simple(tt):
-    """Convert {cls: [[{subject,teacher,room}]]} → {cls: [[subject_str]]}"""
-    simple = {}
-    for cls_name, schedule in tt.items():
-        simple[cls_name] = [[slot["subject"] for slot in day] for day in schedule]
-    return simple
+    return {
+        cls_name: [[slot["subject"] for slot in day] for day in schedule]
+        for cls_name, schedule in tt.items()
+    }
 
 
 class handler(BaseHTTPRequestHandler):
 
     def do_OPTIONS(self):
         self.send_response(200)
-        self._send_cors_headers()
+        self._cors()
         self.end_headers()
 
     def do_GET(self):
@@ -73,16 +96,14 @@ class handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         try:
-            content_length = int(self.headers.get("Content-Length", 0))
-            body = self.rfile.read(content_length) if content_length else b"{}"
-            payload = json.loads(body) if body else {}
-        except Exception:
-            payload = {}
+            classes = _load_class_maps()
+        except Exception as e:
+            self._respond({"error": f"Failed to load class data: {e}"}, 500)
+            return
+
+        required_hours = {cls.name: BASE_REQUIRED.copy() for cls in classes}
 
         try:
-            classes = build_classes()
-            required_hours = {name: BASE_REQUIRED.copy() for name in CLASS_NAMES}
-
             result = generate_backtracking_timetable(
                 classes,
                 required_hours,
@@ -96,36 +117,36 @@ class handler(BaseHTTPRequestHandler):
 
             tt, subject_count, generation_scores, best_gen = result
 
-            eval_score  = evaluate_timetable(tt)
-            free_slots  = count_free_slots(tt)
-            violations  = consecutive_subject_violations(tt)
-            spread      = subject_spread_score(tt)
-            balance     = daily_balance_score(tt)
-            t_load      = teacher_load_score(tt)
-            overall     = overall_timetable_score(tt)
+            # Send per-class teacher maps to the frontend
+            class_teacher_maps = {
+                cls.name: {
+                    sub: cls.subject_teacher_map[sub]
+                    for sub in cls.subject_teacher_map
+                }
+                for cls in classes
+            }
 
             response = {
                 "timetable":          timetable_to_simple(tt),
                 "generation_scores":  generation_scores,
                 "best_gen":           best_gen,
+                "class_teacher_maps": class_teacher_maps,
                 "metrics": {
-                    "eval_score":    round(eval_score, 2),
-                    "free_slots":    free_slots,
-                    "violations":    violations,
-                    "spread_score":  spread,
-                    "balance_score": balance,
-                    "teacher_score": t_load,
-                    "overall_score": round(overall, 2),
+                    "eval_score":    round(evaluate_timetable(tt), 2),
+                    "free_slots":    count_free_slots(tt),
+                    "violations":    consecutive_subject_violations(tt),
+                    "spread_score":  subject_spread_score(tt),
+                    "balance_score": daily_balance_score(tt),
+                    "teacher_score": teacher_load_score(tt),
+                    "overall_score": round(overall_timetable_score(tt), 2),
                 },
             }
-
             self._respond(response)
 
         except Exception as e:
             self._respond({"error": str(e)}, 500)
 
-    # ── helpers ──────────────────────────────
-    def _send_cors_headers(self):
+    def _cors(self):
         self.send_header("Access-Control-Allow-Origin",  "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
@@ -135,9 +156,9 @@ class handler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type",   "application/json")
         self.send_header("Content-Length", str(len(body)))
-        self._send_cors_headers()
+        self._cors()
         self.end_headers()
         self.wfile.write(body)
 
     def log_message(self, *args):
-        pass  # suppress default access logs
+        pass
