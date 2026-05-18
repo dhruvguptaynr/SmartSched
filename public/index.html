@@ -252,7 +252,7 @@ table.tt tr:last-child td { border-bottom: none; }
   background: var(--surface2); border-radius: 3px; overflow: hidden;
 }
 .score-fill { height: 100%; border-radius: 3px; transition: width .6s; }
-.score-num { font-size: 10px; font-weight: 500; color: var(--text); width: 28px; text-align: right; }
+.score-num { font-size: 10px; font-weight: 500; color: var(--text); width: 72px; text-align: right; }
 
 /* ── Prog ring ── */
 .prog-ring { position: relative; display: inline-flex; align-items: center; justify-content: center; }
@@ -785,21 +785,34 @@ function renderGenChart() {
 }
 
 function renderScores(scores) {
+  const viol = consecutiveViolations(currentData);
+  const free = countFreeSlots(currentData);
+
+  // scores[0..4] are 0-100 percentages for the bar widths
+  // For consecutive: bar shows penalty level (0 violations = full green bar, more = shrinks red)
+  const consBarPct  = Math.max(0, 100 - viol * 15);
+  const consColor   = viol === 0 ? 'var(--green)' : viol <= 2 ? 'var(--amber)' : 'var(--red)';
+  const freeBarPct  = Math.max(0, 100 - free * 12);
+  const freeColor   = free === 0 ? 'var(--green)' : free <= 4 ? 'var(--teal)' : 'var(--amber)';
+
   const items = [
-    { name:'Subject spread', val: scores[0], color: 'var(--green)' },
-    { name:'Daily balance',  val: scores[1], color: 'var(--blue)' },
-    { name:'Teacher load',   val: scores[2], color: 'var(--purple)' },
-    { name:'Consecutive',    val: scores[3], color: 'var(--amber)' },
-    { name:'Free slots',     val: scores[4], color: 'var(--teal)' }
+    { name:'Subject spread', val: scores[0], pct: scores[0], color: 'var(--green)',   label: scores[0] },
+    { name:'Daily balance',  val: scores[1], pct: scores[1], color: 'var(--blue)',    label: scores[1] },
+    { name:'Teacher load',   val: scores[2], pct: scores[2], color: 'var(--purple)',  label: scores[2] },
+    { name:'Consecutive',    val: consBarPct, pct: consBarPct, color: consColor,
+      label: viol === 0 ? '✓ None' : `${viol} violation${viol > 1 ? 's' : ''}` },
+    { name:'Free slots',     val: freeBarPct, pct: freeBarPct, color: freeColor,
+      label: free === 0 ? '✓ None' : `${free} slot${free > 1 ? 's' : ''}` }
   ];
+
   document.getElementById('scoreList').innerHTML = items.map(it =>
     `<div class="score-row">
       <div class="score-name">${it.name}</div>
-      <div class="score-track"><div class="score-fill" style="width:${it.val}%;background:${it.color}"></div></div>
-      <div class="score-num">${it.val}</div>
+      <div class="score-track"><div class="score-fill" style="width:${it.pct}%;background:${it.color}"></div></div>
+      <div class="score-num" style="color:${it.color};font-size:9px;width:72px;text-align:right">${it.label}</div>
     </div>`
   ).join('');
-  const avg = Math.round(items.reduce((a,b) => a+b.val, 0) / items.length);
+  const avg = Math.round([scores[0], scores[1], scores[2], consBarPct, freeBarPct].reduce((a,b) => a+b, 0) / 5);
   document.getElementById('ringVal').textContent = avg;
   const offset = 201.1 * (1 - avg/100);
   document.getElementById('ringCircle').setAttribute('stroke-dashoffset', offset.toFixed(1));
