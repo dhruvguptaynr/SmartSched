@@ -78,8 +78,8 @@ def overall_timetable_score(timetable):
 
 def evaluate_timetable(timetable):
     score = 0
-    score -= count_free_slots(timetable) * 5
-    score -= consecutive_subject_violations(timetable) * 8
+    score -= count_free_slots(timetable) * 4
+    score -= consecutive_subject_violations(timetable) * 6
     score += subject_spread_score(timetable)
     score += daily_balance_score(timetable)
     score += teacher_load_score(timetable)

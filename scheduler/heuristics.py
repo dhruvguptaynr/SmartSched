@@ -29,7 +29,7 @@ def rank_subjects(subjects, timetable, cls, d, s, subject_count, required_hours)
         elif required > 2:
             sc -= count_today * 2
         else:
-            sc -= count_today * 4
+            sc -= count_today * 3
 
         if s > 0:
             prev = timetable[cls.name][d][s - 1]
@@ -45,7 +45,7 @@ def rank_subjects(subjects, timetable, cls, d, s, subject_count, required_hours)
                 required = required_hours[cls.name].get(sub, 0)
                 if required > 5:
                     if s - prev_s > 1:
-                        sc -= 18
+                        sc -= 15
                 else:
                     sc -= 5
 

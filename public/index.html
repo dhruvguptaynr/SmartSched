@@ -4,8 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Timetable Optimiser</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,500;0,700;1,300&display=swap" rel="stylesheet">
+<!-- Fonts: system stack only — no external network calls -->
 <style>
 :root {
   --bg: #0E0F11;
@@ -31,8 +30,8 @@
   --pink-dim: #3D1A2E;
   --teal: #5BC4D8;
   --teal-dim: #1A3540;
-  --mono: 'DM Mono', monospace;
-  --serif: 'Fraunces', serif;
+  --mono: ui-monospace, 'Cascadia Code', 'Fira Mono', monospace;
+  --serif: Georgia, 'Times New Roman', serif;
   --radius: 8px;
   --radius-lg: 12px;
 }
@@ -346,6 +345,68 @@ table.tt tr:last-child td { border-bottom: none; }
 /* ── Fade in ── */
 @keyframes fadeUp { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:none } }
 .fade-in { animation: fadeUp .35s ease forwards; }
+
+/* ── Ollama panel ── */
+.ollama-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.ollama-label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 500; color: var(--text3);
+  letter-spacing: .04em; white-space: nowrap;
+}
+
+.analyse-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 14px;
+  background: rgba(155,127,232,.12);
+  border: 1px solid var(--purple-dim);
+  color: var(--purple);
+  border-radius: 6px; cursor: pointer;
+  font-family: var(--mono); font-size: 11px; font-weight: 500;
+  transition: opacity .15s, transform .1s;
+  white-space: nowrap;
+}
+.analyse-btn:hover:not(:disabled) { opacity: .8; transform: translateY(-1px); }
+.analyse-btn:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+
+
+/* ── Analysis output ── */
+.analysis-card {
+  background: var(--surface);
+  border: 1px solid var(--purple-dim);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 12px;
+  display: none;
+}
+.analysis-card.show { display: block; }
+.analysis-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.analysis-title {
+  font-size: 11px; font-weight: 500; color: var(--purple);
+  display: flex; align-items: center; gap: 6px;
+  text-transform: uppercase; letter-spacing: .06em;
+}
+.analysis-model { font-size: 10px; color: var(--text3); }
+.analysis-body {
+  font-size: 12px; color: var(--text2); line-height: 1.65;
+  white-space: pre-wrap; font-family: var(--mono);
+}
+.analysis-body .section-hdr {
+  color: var(--purple); font-weight: 500; margin-top: 10px;
+}
+.analysis-error {
+  font-size: 11px; color: var(--red); line-height: 1.5;
+  padding: 10px; border-radius: 6px;
+  background: rgba(232,88,88,.08); border: 1px solid var(--red-dim);
+}
 </style>
 </head>
 <body>
@@ -366,6 +427,21 @@ table.tt tr:last-child td { border-bottom: none; }
     <span class="tag tag-amber" id="conflictTag">2 conflicts</span>
     <button class="run-btn" id="runBtn" onclick="runOptimiser()">
       <span id="runIcon">↻</span> Re-run optimiser
+    </button>
+  </div>
+</div>
+
+<!-- ANALYSIS BAR -->
+<div class="ollama-bar">
+  <div class="ollama-label">
+    ✦ Rule-based Analyser
+  </div>
+  <span style="font-size:10px;color:var(--text3)">
+    Detects conflicts, imbalance &amp; spread issues — no external API
+  </span>
+  <div style="margin-left:auto">
+    <button class="analyse-btn" id="analyseBtn" onclick="analyseWithOllama()">
+      <span id="analyseIcon">✦</span> Analyse timetable
     </button>
   </div>
 </div>
@@ -407,6 +483,19 @@ table.tt tr:last-child td { border-bottom: none; }
       <div class="mc-val" id="mViol">—</div>
       <div class="mc-row"><div class="mc-sub">Consecutive same subj.</div><span class="mc-badge" id="violBadge">—</span></div>
     </div>
+  </div>
+
+  <!-- OLLAMA ANALYSIS OUTPUT -->
+  <div class="analysis-card" id="analysisCard">
+    <div class="analysis-hdr">
+      <div class="analysis-title">✦ Ollama Analysis</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="analysis-model" id="analysisModel"></span>
+        <button onclick="document.getElementById('analysisCard').classList.remove('show')"
+          style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;line-height:1">✕</button>
+      </div>
+    </div>
+    <div class="analysis-body" id="analysisBody"></div>
   </div>
 
   <!-- TIMETABLE -->
@@ -1045,6 +1134,62 @@ function init() {
   renderScores([spread, balance, tload, cons, freeS]);
   renderConflicts();
   renderTeachers();
+}
+
+// ─────────────────────────────────────────────
+// RULE-BASED ANALYSER (no external API)
+// ─────────────────────────────────────────────
+
+async function analyseWithOllama() {
+  const btn     = document.getElementById('analyseBtn');
+  const card    = document.getElementById('analysisCard');
+  const body    = document.getElementById('analysisBody');
+  const modelEl = document.getElementById('analysisModel');
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="border-top-color:var(--purple);border-color:rgba(155,127,232,.2)"></span> Analysing…';
+
+  card.classList.add('show');
+  body.innerHTML = '<span style="color:var(--text3)">Running rule-based analysis…</span>';
+  modelEl.textContent = 'rule-based analyser';
+
+  const payload = {
+    timetable:          currentData,
+    class_teacher_maps: CLASS_TEACHER_MAPS,
+    metrics: {
+      free_slots:    countFreeSlots(currentData),
+      violations:    consecutiveViolations(currentData),
+      spread_score:  subjectSpreadScore(currentData),
+      balance_score: dailyBalanceScore(currentData),
+      eval_score:    evaluateScore(currentData),
+    }
+  };
+
+  try {
+    const res = await fetch('/api/ollama_analyse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      body.innerHTML = `<div class="analysis-error">⚠ ${data.error}</div>`;
+    } else {
+      const formatted = data.analysis
+        .replace(/^(──.+)$/gm, '<span class="section-hdr">$1</span>')
+        .replace(/✅|✓/g, '<span style="color:var(--green)">$&</span>')
+        .replace(/⚠|✗/g,  '<span style="color:var(--amber)">$&</span>');
+      body.innerHTML = formatted;
+      modelEl.textContent = data.model;
+    }
+  } catch (err) {
+    body.innerHTML = `<div class="analysis-error">⚠ ${err.message}</div>`;
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<span>✦</span> Analyse timetable';
 }
 
 init();
