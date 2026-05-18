@@ -388,7 +388,7 @@ table.tt tr:last-child td { border-bottom: none; }
     <div class="mc">
       <div class="mc-label">Combined Score</div>
       <div class="mc-val" id="mScore">—</div>
-      <div class="mc-row"><div class="mc-sub">0.7×eval + 0.3×ML</div><span class="mc-badge tag-green" id="scoreBadge">—</span></div>
+      <div class="mc-row"><div class="mc-sub">0.7×eval + 0.3×ML (after re-run)</div><span class="mc-badge tag-green" id="scoreBadge">—</span></div>
     </div>
     <div class="mc">
       <div class="mc-label">Evaluator Score</div>
@@ -398,7 +398,7 @@ table.tt tr:last-child td { border-bottom: none; }
     <div class="mc">
       <div class="mc-label">ML Predicted</div>
       <div class="mc-val" id="mML">—</div>
-      <div class="mc-row"><div class="mc-sub">Random forest</div><span class="mc-badge tag-green">High conf.</span></div>
+      <div class="mc-row"><div class="mc-sub">Random forest · run to load</div><span class="mc-badge tag-green">High conf.</span></div>
     </div>
     <div class="mc">
       <div class="mc-label">Free Slots</div>
@@ -900,17 +900,16 @@ function updateMetrics() {
   const free = countFreeSlots(currentData);
   const viol = consecutiveViolations(currentData);
   const ev = evaluateScore(currentData);
-  const ml = Math.round(85 + Math.random() * 10);
-  const combined = (ev * 0.7 + ml * 0.3).toFixed(1);
 
-  document.getElementById('mScore').textContent = combined;
+  // ML score only available after API call — show evaluator score only on init
+  document.getElementById('mScore').textContent = ev;
   document.getElementById('mEval').textContent = ev;
-  document.getElementById('mML').textContent = ml;
+  document.getElementById('mML').textContent = '—';
   document.getElementById('mFree').textContent = free;
   document.getElementById('mViol').textContent = viol;
 
-  document.getElementById('scoreBadge').textContent = parseFloat(combined) > 80 ? 'Good' : 'Fair';
-  document.getElementById('evalBadge').textContent = `↑ +${(Math.random()*5).toFixed(1)}`;
+  document.getElementById('scoreBadge').textContent = ev > 80 ? 'Good' : 'Fair';
+  document.getElementById('evalBadge').textContent = ev > 80 ? 'High' : 'Moderate';
   document.getElementById('freeBadge').textContent = free <= 5 ? 'On target' : 'Review';
   document.getElementById('violBadge').textContent = viol === 0 ? 'Clean' : viol < 3 ? 'Review' : 'High';
   document.getElementById('violBadge').className = 'mc-badge ' + (viol===0?'tag-green':viol<3?'tag-amber':'tag-red');
@@ -976,17 +975,17 @@ async function runOptimiser() {
       }
     }
 
-    // Update metrics from real backend data
+    // Update metrics from real backend data (including real ML score)
     if (parsed.metrics) {
       const m = parsed.metrics;
-      const ml = Math.round(85 + Math.random() * 10);
-      const combined = (m.eval_score * 0.7 + ml * 0.3).toFixed(1);
-      document.getElementById('mScore').textContent = combined;
+      document.getElementById('mScore').textContent = m.combined_score ?? m.eval_score;
       document.getElementById('mEval').textContent = m.eval_score;
-      document.getElementById('mML').textContent = ml;
+      document.getElementById('mML').textContent = m.ml_score !== undefined ? m.ml_score.toFixed(1) : '—';
       document.getElementById('mFree').textContent = m.free_slots;
       document.getElementById('mViol').textContent = m.violations;
-      document.getElementById('scoreBadge').textContent = parseFloat(combined) > 80 ? 'Good' : 'Fair';
+      const combined = m.combined_score ?? m.eval_score;
+      document.getElementById('scoreBadge').textContent = combined > 80 ? 'Good' : 'Fair';
+      document.getElementById('evalBadge').textContent = m.eval_score > 80 ? 'High' : 'Moderate';
       document.getElementById('freeBadge').textContent = m.free_slots <= 5 ? 'On target' : 'Review';
       document.getElementById('violBadge').textContent = m.violations === 0 ? 'Clean' : m.violations < 3 ? 'Review' : 'High';
       document.getElementById('violBadge').className = 'mc-badge ' + (m.violations===0?'tag-green':m.violations<3?'tag-amber':'tag-red');

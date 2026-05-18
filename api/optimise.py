@@ -17,7 +17,12 @@ from scheduler.evaluator import (
     evaluate_timetable,
     overall_timetable_score,
 )
+from ml.dataset_builder import build_dataset
+from ml.predictor import predict_timetable_quality
 
+# ─────────────────────────────────────────────
+# REQUIRED HOURS  (same for all classes)
+# ─────────────────────────────────────────────
 BASE_REQUIRED = {
     "CN":      5,
     "ADS":     10,
@@ -33,10 +38,16 @@ _JSON_PATH = os.path.join(
     "data", "processed_data", "timetable.json"
 )
 
+_TRAINING_CSV = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "training_data.csv"
+)
+
+
 def _load_class_maps():
     """
     Mirrors split_by_class() + build_class_map() from the original pipeline.
-    Reads the pre-parsed timetable.json so no PDF dependency at runtime.
+    Reads timetable.json so no PDF dependency at runtime.
     Each class has its OWN teacher/room per subject as extracted from the PDF.
     """
     class_names = ["4A", "4B", "4C", "4D"]
@@ -44,7 +55,7 @@ def _load_class_maps():
     with open(_JSON_PATH) as f:
         structured = json.load(f)
 
-    # split_by_class: new class boundary when "Mo" follows "Fr"
+    # split_by_class: new class when "Mo" follows "Fr"
     classes_raw = []
     current = []
     prev_day = None
@@ -104,20 +115,69 @@ class handler(BaseHTTPRequestHandler):
         required_hours = {cls.name: BASE_REQUIRED.copy() for cls in classes}
 
         try:
-            result = generate_backtracking_timetable(
-                classes,
-                required_hours,
-                max_attempts_per_class=150,
-                num_generations=5,
-            )
+            # ── Run 5 generations, pick best by combined score ──────────────
+            best_tt            = None
+            best_subject_count = None
+            best_combined      = float("-inf")
+            generation_scores  = []
 
-            if result is None:
-                self._respond({"error": "Optimiser failed to find a valid timetable"}, 500)
+            for generation in range(5):
+                result = generate_backtracking_timetable(
+                    classes,
+                    required_hours,
+                    max_attempts_per_class=150,
+                    num_generations=1,   # one generation at a time so we can run ML per gen
+                )
+
+                if result is None:
+                    generation_scores.append(0)
+                    continue
+
+                tt, subject_count, _, _ = result
+
+                # ── Evaluator score ─────────────────────────────────────────
+                eval_score = evaluate_timetable(tt)
+
+                # ── ML quality prediction (mirrors main.py exactly) ─────────
+                try:
+                    df = build_dataset(
+                        tt,
+                        classes,
+                        subject_count,
+                        required_hours,
+                        eval_score
+                    )
+                    ml_score = float(predict_timetable_quality(df))
+                except Exception:
+                    ml_score = eval_score  # graceful fallback
+
+                # ── Save training data (append) ─────────────────────────────
+                try:
+                    import os as _os
+                    file_exists = _os.path.exists(_TRAINING_CSV)
+                    df_save = build_dataset(tt, classes, subject_count, required_hours, eval_score)
+                    df_save.to_csv(_TRAINING_CSV, mode="a", header=not file_exists, index=False)
+                except Exception:
+                    pass  # non-critical
+
+                # ── Combined score (same weights as main.py) ────────────────
+                combined = 0.7 * eval_score + 0.3 * ml_score
+                generation_scores.append(round(combined, 2))
+
+                if combined > best_combined:
+                    best_combined      = combined
+                    best_tt            = tt
+                    best_subject_count = subject_count
+                    best_eval_score    = eval_score
+                    best_ml_score      = ml_score
+
+            if best_tt is None:
+                self._respond({"error": "Optimiser failed to generate any valid timetable"}, 500)
                 return
 
-            tt, subject_count, generation_scores, best_gen = result
+            best_gen = generation_scores.index(max(generation_scores))
 
-            # Send per-class teacher maps to the frontend
+            # ── Build per-class teacher map for frontend ────────────────────
             class_teacher_maps = {
                 cls.name: {
                     sub: cls.subject_teacher_map[sub]
@@ -127,18 +187,20 @@ class handler(BaseHTTPRequestHandler):
             }
 
             response = {
-                "timetable":          timetable_to_simple(tt),
+                "timetable":          timetable_to_simple(best_tt),
                 "generation_scores":  generation_scores,
                 "best_gen":           best_gen,
                 "class_teacher_maps": class_teacher_maps,
                 "metrics": {
-                    "eval_score":    round(evaluate_timetable(tt), 2),
-                    "free_slots":    count_free_slots(tt),
-                    "violations":    consecutive_subject_violations(tt),
-                    "spread_score":  subject_spread_score(tt),
-                    "balance_score": daily_balance_score(tt),
-                    "teacher_score": teacher_load_score(tt),
-                    "overall_score": round(overall_timetable_score(tt), 2),
+                    "eval_score":    round(best_eval_score, 2),
+                    "ml_score":      round(best_ml_score, 2),
+                    "combined_score":round(best_combined, 2),
+                    "free_slots":    count_free_slots(best_tt),
+                    "violations":    consecutive_subject_violations(best_tt),
+                    "spread_score":  subject_spread_score(best_tt),
+                    "balance_score": daily_balance_score(best_tt),
+                    "teacher_score": teacher_load_score(best_tt),
+                    "overall_score": round(overall_timetable_score(best_tt), 2),
                 },
             }
             self._respond(response)
